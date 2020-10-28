@@ -28,7 +28,7 @@ Everytime a change is made to the repo, when you are done, you should commit the
 5. Push the changes to the repo ```git push```
 6. The repo is now updated!
 
-* README commit example:
+* **README commit example:**
 
 1. ```cd Desktop/SO/Projeto/TecnicoFS```
 2. I am writing this message on my editor!
