@@ -28,10 +28,7 @@ pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the lo
 
 /*--------------------------------------------------------------------------------*/
 
-void error(const char* errorMessage){
-    printf("%s\n",errorMessage);
-    exit(EXIT_FAILURE);
-}
+
 
 int getNumThreads(int argc, char* numT){
     int numThreads = atoi(numT);
@@ -222,10 +219,11 @@ void* applyCommands(){
                 exit(EXIT_FAILURE);
             }
         }
-
+        
         copy=numLocks;
         for(int i=0; i < copy; i++){
-            unlock_sync(&iNumberBuffer[i]);
+            printf("%d\n",numLocks);
+            unlock(&iNumberBuffer[i]);
             numLocks--;
         }         
     }
@@ -236,6 +234,9 @@ void* applyCommands(){
 
 
 /*--------------------------------------------------------------------------------*/
+
+
+
 
 
 void createThread(int numberThreads, pthread_t tid[]){
