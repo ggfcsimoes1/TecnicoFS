@@ -46,11 +46,11 @@ typedef struct inode_t {
 
 inode_t inode_table[INODE_TABLE_SIZE];
 
-void lock_sync(pthread_rwlock_t * lock, char rw);
-void unlock_sync(pthread_rwlock_t * lock);
+void lock(pthread_rwlock_t * lock, char rw);
+void unlock(pthread_rwlock_t * lock);
 void lock_init(int inumber);
 void lock_destroy(int inumber);
-void errorLocks(int condition);
+void error(const char* errorMessage);
 
 void insert_delay(int cycles);
 void inode_table_init();

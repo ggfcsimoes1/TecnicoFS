@@ -9,27 +9,31 @@
 
 /* -------------------------------------------------------------------------*/
 
+void error(const char* errorMessage){
+    printf("%s\n",errorMessage);
+    exit(EXIT_FAILURE);
+}
+
+
 /*Locks a thread according to the type of lock (void*) chosen @ the start.
-	mode: nosync, mutex, rwlock
 	rw: 'r', 'w'
 */
-void lock_sync(pthread_rwlock_t * lock, char rw){
+void lock(pthread_rwlock_t * lock, char rw){
 	
 	if(rw == 'r' && pthread_rwlock_rdlock(lock) != 0){
-		fprintf(stderr, "Error: syncronization failed\n");
-		exit(EXIT_FAILURE);
+		error("Error: locking failed");
+        
 	}
 	else if (rw == 'w' && pthread_rwlock_wrlock(lock) != 0){
-		fprintf(stderr, "Error: syncronization failed\n");
-		exit(EXIT_FAILURE);
+		error("Error: locking failed");
 	}
+    
 }
 
 /*Unlocks a previously locked thread
-	mode: nosync, mutex, rwlock
 */
 
-void unlock_sync(pthread_rwlock_t * lock){	 
+void unlock(pthread_rwlock_t * lock){	 
 	 if(pthread_rwlock_unlock(lock) != 0){
 	 	fprintf(stderr, "Error: desyncronization failed\n");
 		exit(EXIT_FAILURE);
@@ -37,30 +41,16 @@ void unlock_sync(pthread_rwlock_t * lock){
 }
 
 
-void errorLocks(int condition){
-    switch(condition){
-        case 0:
-            fprintf(stderr, "Error: couldn't create locks\n");
-            exit(EXIT_FAILURE);
-
-        case 1:
-            fprintf(stderr, "Error: couldn't destroy locks\n");
-            exit(EXIT_FAILURE);  
-    }
-
-    
-}
-
 void lock_init(int inumber){
     if (pthread_rwlock_init(&inode_table[inumber].lock, NULL) != 0){
-        errorLocks(0);
+        error("Error: failed to create lock");
     }
 }
 
 
 void lock_destroy(int inumber){
     if (pthread_rwlock_destroy(&inode_table[inumber].lock) != 0){
-        errorLocks(1);
+        error("Error: failed to destroy lock");
     }
 }
 
@@ -116,7 +106,9 @@ int inode_create(type nType) {
 
     for (int inumber = 0; inumber < INODE_TABLE_SIZE; inumber++) {
         if (inode_table[inumber].nodeType == T_NONE) {
-            lock_sync(&inode_table[inumber].lock, 'w');
+            
+            lock(&inode_table[inumber].lock, 'w');
+            
             if (inode_table[inumber].nodeType == T_NONE)
             inode_table[inumber].nodeType = nType;
             
@@ -132,7 +124,7 @@ int inode_create(type nType) {
             else {
                 inode_table[inumber].data.fileContents = NULL;
             }
-            unlock_sync(&inode_table[inumber].lock);
+            unlock(&inode_table[inumber].lock);
             return inumber;
         }
     }
