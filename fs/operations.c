@@ -87,7 +87,6 @@ int is_dir_empty(DirEntry *dirEntries) {
 			return FAIL;
 		}
 	}
-	
 	return SUCCESS;
 }
 
@@ -131,8 +130,6 @@ int create(char *name, type nodeType, pthread_rwlock_t inumber_buffer[],int * nu
 	strcpy(name_copy, name);
 	
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
-	//printf("%s\n", name_copy);
-	//printf("locking create %d\n",parent_inumber);
 	parent_inumber = lookup_rw(parent_name, inumber_buffer, num_locks);
 	
 	if (parent_inumber == FAIL) {
@@ -169,7 +166,6 @@ int create(char *name, type nodeType, pthread_rwlock_t inumber_buffer[],int * nu
 		       child_name, parent_name);
 		return FAIL;
 	}
-	
 	return SUCCESS;
 }
 
@@ -236,8 +232,7 @@ int delete(char *name, pthread_rwlock_t inumber_buffer[],int * num_locks){
 		printf("could not delete inode number %d from dir %s\n",
 		       child_inumber, parent_name);
 		return FAIL;
-	}
-
+	} 
 	return SUCCESS;
 }
 

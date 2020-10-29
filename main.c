@@ -6,17 +6,18 @@
 #include <getopt.h>
 #include <string.h>
 #include <ctype.h>
-#include "fs/operations.h"
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/time.h>
+
+#include "fs/operations.h"
+#include "fs/state.h"
 
 #define TRUE 1
 #define MAX_COMMANDS 150000
 #define MAX_INPUT_SIZE 100
 #define MAX_PARAMETERS 5
 
-struct timeval itime, ftime;
 
 int numberThreads = 0;
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
@@ -24,11 +25,23 @@ int numberCommands = 0;
 int headQueue = 0; 
 
 pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
-
+struct timeval itime, ftime;
 
 /*--------------------------------------------------------------------------------*/
 
+void startTimer(){
+    gettimeofday(&itime ,NULL);
+}
 
+void stopTimer(){
+    gettimeofday(&ftime ,NULL);
+}
+
+void getExecTime(){ /* Function that calculates the program's run time*/
+    double milliseconds = (double) (ftime.tv_usec - itime.tv_usec) / 1000000; /* tv_usec/tv_sec are ints, so a cast is required in order to get an accurate reading */
+    double seconds = (double) (ftime.tv_sec - itime.tv_sec);        
+    printf("TecnicoFS completed in %.4f seconds.\n", seconds + milliseconds);
+}
 
 int getNumThreads(int argc, char* numT){
     int numThreads = atoi(numT);
@@ -62,20 +75,6 @@ void globalUnlock(){
     }  
 }
 
-void startTimer(){
-    gettimeofday(&itime ,NULL);
-}
-
-void stopTimer(){
-    gettimeofday(&ftime ,NULL);
-}
-
-
-void getExecTime(){ /* Function that calculates the program's run time*/
-    double milliseconds = (double) (ftime.tv_usec - itime.tv_usec) / 1000000; /* tv_usec/tv_sec are ints, so a cast is required in order to get an accurate reading */
-    double seconds = (double) (ftime.tv_sec - itime.tv_sec);        
-    printf("TecnicoFS completed in %.4f seconds.\n", seconds + milliseconds);
-}
 
 /*--------------------------------------------------------------------------------*/
 
@@ -152,8 +151,6 @@ void* applyCommands(){
 
     pthread_rwlock_t iNumberBuffer[INODE_TABLE_SIZE];
     int numLocks = 0;
-    int copy;
-    
     
     while (TRUE){
 
@@ -203,16 +200,16 @@ void* applyCommands(){
                 break;
             case 'l': 
                 searchResult = lookup(name,iNumberBuffer,&numLocks);
-                
                 if (searchResult >= 0)
                     printf("Search: %s found\n", name);
                 else
-                    printf("Search: %s not found\n", name);
-                
+                    printf("Search: %s not found\n", name);     
                 break;
             case 'd':
                 printf("Delete: %s\n", name);
+                
                 delete(name,iNumberBuffer,&numLocks);
+                
                 break;
             default: { /* error */
                 fprintf(stderr, "Error: command to apply\n");
@@ -220,12 +217,8 @@ void* applyCommands(){
             }
         }
         
-        copy=numLocks;
-        for(int i=0; i < copy; i++){
-            printf("%d\n",numLocks);
-            unlock(&iNumberBuffer[i]);
-            numLocks--;
-        }         
+        unlockAll(numLocks, iNumberBuffer);      
+        
     }
     return 0;
 }

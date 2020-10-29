@@ -9,11 +9,13 @@
 
 /* -------------------------------------------------------------------------*/
 
+/*Generic error function, prints whatever is given as input & exits the program
+	errorMessage: the error message
+*/
 void error(const char* errorMessage){
     printf("%s\n",errorMessage);
     exit(EXIT_FAILURE);
 }
-
 
 /*Locks a thread according to the type of lock (void*) chosen @ the start.
 	rw: 'r', 'w'
@@ -31,24 +33,40 @@ void lock(pthread_rwlock_t * lock, char rw){
 }
 
 /*Unlocks a previously locked thread
+    lock: pthread_rwlock_t
 */
-
 void unlock(pthread_rwlock_t * lock){	 
 	 if(pthread_rwlock_unlock(lock) != 0){
-	 	fprintf(stderr, "Error: desyncronization failed\n");
-		exit(EXIT_FAILURE);
+	 	error("Error: unlocking failed");
 	 }
 }
 
+/*Unlocks every locked thread placed in the buffer array
+    numLocks: int
+    INumberBuffer[]: pthread_rwlock_t
+*/
+void unlockAll(int numLocks, pthread_rwlock_t iNumberBuffer[]){
+    int i,j;
+    for(i=0, j=numLocks; i < j; i++){
+        unlock(&iNumberBuffer[i]);
+        numLocks--;
+    }
+    return;
+}
 
-void lock_init(int inumber){
+/*Initializes a lock, associating it to a node in the i-node table
+    inumber: the number where the node resides in the table
+*/
+void lockInit(int inumber){
     if (pthread_rwlock_init(&inode_table[inumber].lock, NULL) != 0){
         error("Error: failed to create lock");
     }
 }
 
-
-void lock_destroy(int inumber){
+/*Destroys a lock
+    inumber: the number where the node resides in the table
+*/
+void lockDestroy(int inumber){
     if (pthread_rwlock_destroy(&inode_table[inumber].lock) != 0){
         error("Error: failed to destroy lock");
     }
@@ -72,7 +90,7 @@ void inode_table_init() {
         inode_table[i].nodeType = T_NONE;
         inode_table[i].data.dirEntries = NULL;
         inode_table[i].data.fileContents = NULL;
-        lock_init(i);
+        lockInit(i);
     }
 }
 
@@ -82,7 +100,7 @@ void inode_table_init() {
 
 void inode_table_destroy() {
     for (int i = 0; i < INODE_TABLE_SIZE; i++) {
-        lock_destroy(i);
+        lockDestroy(i);
         if (inode_table[i].nodeType != T_NONE) {
             /* as data is an union, the same pointer is used for both dirEntries and fileContents */
             /* just release one of them */
@@ -109,9 +127,11 @@ int inode_create(type nType) {
             
             lock(&inode_table[inumber].lock, 'w');
             
-            if (inode_table[inumber].nodeType == T_NONE)
+            if (inode_table[inumber].nodeType != T_NONE)
+                return FAIL;
+
             inode_table[inumber].nodeType = nType;
-            
+
 
             if (nType == T_DIRECTORY) {
                 /* Initializes entry table */
@@ -140,7 +160,6 @@ int inode_create(type nType) {
 int inode_delete(int inumber) {
     /* Used for testing synchronization speedup */
     insert_delay(DELAY);
-
     if ((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].nodeType == T_NONE)) {
         printf("inode_delete: invalid inumber\n");
         return FAIL;
@@ -150,8 +169,9 @@ int inode_delete(int inumber) {
 
     /* see inode_table_destroy function */
     
-    if (inode_table[inumber].data.dirEntries)
+    if (inode_table[inumber].data.dirEntries){
         free(inode_table[inumber].data.dirEntries);
+    }
     return SUCCESS;
 }
 
@@ -193,7 +213,7 @@ int inode_get(int inumber, type *nType, union Data *data) {
 int dir_reset_entry(int inumber, int sub_inumber) {
     /* Used for testing synchronization speedup */
     insert_delay(DELAY);
-
+    
     if ((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].nodeType == T_NONE)) {
         printf("inode_reset_entry: invalid inumber\n");
         return FAIL;
