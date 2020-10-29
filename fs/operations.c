@@ -315,7 +315,8 @@ int lookup_rw(char *name, pthread_rwlock_t inumber_buffer[], int * num_locks) {
 	while (path != NULL && (current_inumber = lookup_sub_node(path, data.dirEntries)) != FAIL) {
 		if(path[strlen(path)-1]=='\0'){
 			lock(&inode_table[current_inumber].lock,'w');
-			inumber_buffer[*(num_locks)++] = inode_table[current_inumber].lock;
+			inumber_buffer[*(num_locks)] = inode_table[current_inumber].lock;
+			*(num_locks)+=1;
 			break;
 		}
 		
