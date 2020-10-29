@@ -14,7 +14,7 @@
 #include "fs/state.h"
 
 #define TRUE 1
-#define MAX_COMMANDS 150000
+#define MAX_COMMANDS 10
 #define MAX_INPUT_SIZE 100
 #define MAX_PARAMETERS 5
 
@@ -22,10 +22,13 @@
 int numberThreads = 0;
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
-int headQueue = 0; 
+int headQueueR = 0; 
+int headQueueI = 0;
 
 pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
 struct timeval itime, ftime;
+pthread_cond_t canAdd, canGrab;
+
 
 /*--------------------------------------------------------------------------------*/
 
@@ -80,19 +83,35 @@ void globalUnlock(){
 
 
 int insertCommand(char* data) {
-    if(numberCommands != MAX_COMMANDS) {
-        strcpy(inputCommands[numberCommands++], data);
-        return 1;
+    
+    if(*data == EOF)
+        return 0;
+    
+    while(numberCommands == MAX_COMMANDS) {
+        pthread_cond_wait(&canAdd,&mutex_global);
     }
-    return 0;
+    numberCommands++;
+    strcpy(inputCommands[headQueueI++], data);
+    if(headQueueI==MAX_COMMANDS) {
+        headQueueI = 0;
+    }
+    pthread_cond_signal(&canGrab);
+    
+    return 1;
 }
 
-char* removeCommand() {
-    if(numberCommands > 0){
-        numberCommands--;
-        return inputCommands[headQueue++];  
+void removeCommand(char ** command) {
+    
+    while(numberCommands == 0){
+         pthread_cond_wait(&canGrab,&mutex_global);
     }
-    return NULL;
+    numberCommands--;
+    *command = inputCommands[headQueueR++]; 
+    
+     if(headQueueR==MAX_COMMANDS) {
+        headQueueR = 0;
+    }
+    pthread_cond_signal(&canAdd); 
 }
 
 void errorParse(){
@@ -106,6 +125,7 @@ void processInput(FILE *inputfile){
     
     /* break loop with ^Z or ^D */
     while (fgets(line, sizeof(line)/sizeof(char), inputfile)) {
+        globalLock();
         char token, type;
         char name[MAX_INPUT_SIZE];
 
@@ -144,6 +164,7 @@ void processInput(FILE *inputfile){
                 errorParse();
             }
         }
+        globalUnlock();
     }
 }
 
@@ -157,11 +178,14 @@ void* applyCommands(){
         globalLock();
 
         if (numberCommands <= 0){
-            globalUnlock();
+            //globalUnlock();
             break;
         }
 
-        const char* command = removeCommand();
+        char* command=NULL;
+        removeCommand(&command);
+        //printf("%s\n",command);
+
 
         globalUnlock();     /*  Unlocking... */
 
@@ -258,13 +282,15 @@ int main(int argc, char* argv[]){
     numberThreads = getNumThreads(argc, argv[3]);
     FILE *inputfile = openFile(argv[1], "r");
     FILE *outputfile = openFile(argv[2], "w");
+    pthread_cond_init(&canAdd, NULL);
+    pthread_cond_init(&canGrab, NULL);
   
     init_fs();  /* init filesystem */
 
+    startTimer();   /* Starting the timer... */
+    
     processInput(inputfile);    /* process input and print tree */
     fclose(inputfile);
-
-    startTimer();   /* Starting the timer... */
 
     createThread(numberThreads, tid);
     finishThread(numberThreads, tid);

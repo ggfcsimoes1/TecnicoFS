@@ -160,10 +160,13 @@ int inode_create(type nType) {
 int inode_delete(int inumber) {
     /* Used for testing synchronization speedup */
     insert_delay(DELAY);
+    
+    
     if ((inumber < 0) || (inumber > INODE_TABLE_SIZE) || (inode_table[inumber].nodeType == T_NONE)) {
         printf("inode_delete: invalid inumber\n");
         return FAIL;
     } 
+
 
     inode_table[inumber].nodeType = T_NONE;
 
@@ -172,6 +175,7 @@ int inode_delete(int inumber) {
     if (inode_table[inumber].data.dirEntries){
         free(inode_table[inumber].data.dirEntries);
     }
+
     return SUCCESS;
 }
 

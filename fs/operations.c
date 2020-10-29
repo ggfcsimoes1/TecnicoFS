@@ -317,6 +317,7 @@ int lookup_rw(char *name, pthread_rwlock_t inumber_buffer[], int * num_locks) {
 			lock(&inode_table[current_inumber].lock,'w');
 			inumber_buffer[*(num_locks)] = inode_table[current_inumber].lock;
 			*(num_locks)+=1;
+			inode_get(current_inumber, &nType, &data);
 			break;
 		}
 		
