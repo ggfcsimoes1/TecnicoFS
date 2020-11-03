@@ -24,6 +24,7 @@ char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueueR = 0; 
 int headQueueI = 0;
+int done=0;
 
 pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
 struct timeval itime, ftime;
@@ -111,6 +112,13 @@ void removeCommand(char ** command) {
      if(headQueueR==MAX_COMMANDS) {
         headQueueR = 0;
     }
+    /*if(done)
+    {
+        pthread_cond_broadcast(&canAdd);
+        *command=NULL;
+    }*/
+
+    
     pthread_cond_signal(&canAdd); 
 }
 
@@ -166,6 +174,7 @@ void processInput(FILE *inputfile){
         }
         globalUnlock();
     }
+    done=1;
 }
 
 void* applyCommands(){
@@ -177,10 +186,10 @@ void* applyCommands(){
 
         globalLock();
 
-        if (numberCommands <= 0){
+        /*if (numberCommands <= 0){
             //globalUnlock();
             break;
-        }
+        }*/
 
         char* command=NULL;
         removeCommand(&command);
@@ -289,10 +298,12 @@ int main(int argc, char* argv[]){
 
     startTimer();   /* Starting the timer... */
     
+     
+    createThread(numberThreads, tid);
     processInput(inputfile);    /* process input and print tree */
     fclose(inputfile);
 
-    createThread(numberThreads, tid);
+    
     finishThread(numberThreads, tid);
   
     stopTimer();    /* Stopping the timer... */
