@@ -24,11 +24,13 @@ char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueueR = 0; 
 int headQueueI = 0;
-int done=0;
+int done_insert = 0;
+int done_apply = 0;
 
 pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
 struct timeval itime, ftime;
 pthread_cond_t canAdd, canGrab;
+pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 
 /*--------------------------------------------------------------------------------*/
@@ -85,8 +87,8 @@ void globalUnlock(){
 
 int insertCommand(char* data) {
     
-    if(*data == EOF)
-        return 0;
+    //if(*data == EOF)
+        //return 0;
     
     while(numberCommands == MAX_COMMANDS) {
         pthread_cond_wait(&canAdd,&mutex_global);
@@ -104,19 +106,25 @@ int insertCommand(char* data) {
 void removeCommand(char ** command) {
     
     while(numberCommands == 0){
-         pthread_cond_wait(&canGrab,&mutex_global);
+        pthread_cond_wait(&canGrab,&mutex_global);
     }
+    
     numberCommands--;
     *command = inputCommands[headQueueR++]; 
     
-     if(headQueueR==MAX_COMMANDS) {
+    
+    
+    if(headQueueR==MAX_COMMANDS){
         headQueueR = 0;
     }
-    /*if(done)
-    {
+    pthread_rwlock_wrlock(&rwlock);
+    if(done_insert && numberCommands==0){
         pthread_cond_broadcast(&canAdd);
-        *command=NULL;
-    }*/
+        done_apply=1;
+        pthread_rwlock_unlock(&rwlock);
+        return;
+    }
+    pthread_rwlock_unlock(&rwlock);
 
     
     pthread_cond_signal(&canAdd); 
@@ -124,6 +132,7 @@ void removeCommand(char ** command) {
 
 void errorParse(){
     fprintf(stderr, "Error: command invalid\n");
+    globalUnlock();
     exit(EXIT_FAILURE);
 }
 
@@ -174,7 +183,9 @@ void processInput(FILE *inputfile){
         }
         globalUnlock();
     }
-    done=1;
+    pthread_rwlock_wrlock(&rwlock);
+    done_insert=1;
+    pthread_rwlock_unlock(&rwlock);
 }
 
 void* applyCommands(){
@@ -194,9 +205,9 @@ void* applyCommands(){
         char* command=NULL;
         removeCommand(&command);
         //printf("%s\n",command);
-
-
-        globalUnlock();     /*  Unlocking... */
+         
+        
+             /*  Unlocking... */
 
         if (command == NULL){
             continue;
@@ -212,6 +223,7 @@ void* applyCommands(){
             fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
         }
+        globalUnlock();
 
          
         int searchResult;
@@ -225,6 +237,7 @@ void* applyCommands(){
                     case 'd':
                         printf("Create directory: %s\n", name);
                         create(name, T_DIRECTORY,iNumberBuffer,&numLocks);
+                        printf("%d\n",numLocks);
                         break;
                     default:
                         fprintf(stderr, "Error: invalid node type\n");
@@ -248,9 +261,19 @@ void* applyCommands(){
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
             }
+        
+        }
+        if(done_apply){
+            break;
         }
         
-        unlockAll(numLocks, iNumberBuffer);      
+        unlockAll(&numLocks, iNumberBuffer);
+        
+
+        
+
+        
+             
         
     }
     return 0;

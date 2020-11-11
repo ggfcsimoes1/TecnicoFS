@@ -45,11 +45,13 @@ void unlock(pthread_rwlock_t * lock){
     numLocks: int
     INumberBuffer[]: pthread_rwlock_t
 */
-void unlockAll(int numLocks, pthread_rwlock_t iNumberBuffer[]){
-    int i,j;
-    for(i=0, j=numLocks; i < j; i++){
+void unlockAll(int * numLocks, pthread_rwlock_t iNumberBuffer[]){
+    int i,j=*numLocks;
+    for(i=0; i < j; i++){
+        //printf("unlocking %d\n",(int) &iNumberBuffer[i]);
         unlock(&iNumberBuffer[i]);
-        numLocks--;
+        
+        *(numLocks)-=1;
     }
     return;
 }
@@ -127,8 +129,11 @@ int inode_create(type nType) {
             
             lock(&inode_table[inumber].lock, 'w');
             
-            if (inode_table[inumber].nodeType != T_NONE)
+            if (inode_table[inumber].nodeType != T_NONE){
+                unlock(&inode_table[inumber].lock);
                 return FAIL;
+            }
+                
 
             inode_table[inumber].nodeType = nType;
 

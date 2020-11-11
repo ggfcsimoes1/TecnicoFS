@@ -130,7 +130,9 @@ int create(char *name, type nodeType, pthread_rwlock_t inumber_buffer[],int * nu
 	strcpy(name_copy, name);
 	
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
+	
 	parent_inumber = lookup_rw(parent_name, inumber_buffer, num_locks);
+	//printf("%d\n",*num_locks);
 	
 	if (parent_inumber == FAIL) {
 		printf("failed to create %s, invalid parent dir %s\n",
@@ -305,6 +307,7 @@ int lookup_rw(char *name, pthread_rwlock_t inumber_buffer[], int * num_locks) {
 
 	/* get root inode data */
 	lock(&inode_table[current_inumber].lock,'r');
+	//printf("num_locks %d\n",*num_locks);
 	inumber_buffer[*(num_locks)]= inode_table[current_inumber].lock;
 	*(num_locks)+=1;
 	inode_get(current_inumber, &nType, &data);
