@@ -7,6 +7,7 @@
 | Miguel    | 29-10-2020     |  Added circular buffer (still testing)|
 | Miguel    | 03-11-2020     |  Fixed circular buffer (sort of)|
 | Miguel    | 11-11-2020     |  Still has syncronization problems|
+| Miguel    | 12-11-2020     |  Syncronization problems gone  |
 
 
 ## TO-DO

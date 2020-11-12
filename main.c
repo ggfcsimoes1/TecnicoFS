@@ -87,9 +87,6 @@ void globalUnlock(){
 
 int insertCommand(char* data) {
     
-    //if(*data == EOF)
-        //return 0;
-    
     while(numberCommands == MAX_COMMANDS) {
         pthread_cond_wait(&canAdd,&mutex_global);
     }
@@ -112,11 +109,10 @@ void removeCommand(char ** command) {
     numberCommands--;
     *command = inputCommands[headQueueR++]; 
     
-    
-    
     if(headQueueR==MAX_COMMANDS){
         headQueueR = 0;
     }
+    
     pthread_rwlock_wrlock(&rwlock);
     if(done_insert && numberCommands==0){
         pthread_cond_broadcast(&canAdd);
@@ -125,9 +121,8 @@ void removeCommand(char ** command) {
         return;
     }
     pthread_rwlock_unlock(&rwlock);
-
     
-    pthread_cond_signal(&canAdd); 
+    pthread_cond_signal(&canAdd);
 }
 
 void errorParse(){
@@ -190,24 +185,15 @@ void processInput(FILE *inputfile){
 
 void* applyCommands(){
 
-    pthread_rwlock_t iNumberBuffer[INODE_TABLE_SIZE];
+    pthread_rwlock_t * iNumberBuffer[INODE_TABLE_SIZE];
     int numLocks = 0;
     
     while (TRUE){
 
         globalLock();
 
-        /*if (numberCommands <= 0){
-            //globalUnlock();
-            break;
-        }*/
-
         char* command=NULL;
         removeCommand(&command);
-        //printf("%s\n",command);
-         
-        
-             /*  Unlocking... */
 
         if (command == NULL){
             continue;
@@ -237,7 +223,6 @@ void* applyCommands(){
                     case 'd':
                         printf("Create directory: %s\n", name);
                         create(name, T_DIRECTORY,iNumberBuffer,&numLocks);
-                        printf("%d\n",numLocks);
                         break;
                     default:
                         fprintf(stderr, "Error: invalid node type\n");
@@ -253,28 +238,20 @@ void* applyCommands(){
                 break;
             case 'd':
                 printf("Delete: %s\n", name);
-                
                 delete(name,iNumberBuffer,&numLocks);
-                
                 break;
             default: { /* error */
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
             }
-        
         }
+        globalLock();
+        unlockAll(&numLocks, iNumberBuffer);
         if(done_apply){
+            globalUnlock();
             break;
         }
-        
-        unlockAll(&numLocks, iNumberBuffer);
-        
-
-        
-
-        
-             
-        
+        globalUnlock();    
     }
     return 0;
 }
