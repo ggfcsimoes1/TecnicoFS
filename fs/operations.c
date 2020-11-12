@@ -170,7 +170,14 @@ int create(char *name, type nodeType, pthread_rwlock_t *inumber_buffer[],int * n
 	}
 	return SUCCESS;
 }
-
+/*existe um ficheiro/diretoria com o pathname atual e nao existe nenhum ficheiro/diretoria
+com o novo pathname*/
+int move(char* name1, char* name2,pthread_rwlock_t *inumber_buffer[],int * num_locks){
+	int parent_inumber, child_inumber;
+	char *parent_name1, *child_name1, *parent_name2, *child_name2;
+	split_parent_child_from_path(name1, &parent_name1, &child_name1);
+	split_parent_child_from_path(name2, &parent_name2, &child_name2);
+}
 
 /*
  * Deletes a node given a path.

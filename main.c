@@ -140,8 +140,17 @@ void processInput(FILE *inputfile){
         globalLock();
         char token, type;
         char name[MAX_INPUT_SIZE];
+        char name2[MAX_INPUT_SIZE];
+        int numTokens;
 
-        int numTokens = sscanf(line, "%c %s %c", &token, name, &type);
+        sscanf(line, "%c", &token);
+        if(token == 'm'){
+            numTokens = sscanf(line, "%c %s %s", &token, name, name2);
+            //printf("%c %s %s\n",token, name, name2);
+        }else{
+            numTokens = sscanf(line, "%c %s %c", &token, name, &type);
+            //printf("%c %s %c\n",token, name, type);
+        }
 
         /* perform minimal validation */
         if (numTokens < 1) {
@@ -164,6 +173,13 @@ void processInput(FILE *inputfile){
             
             case 'd':
                 if(numTokens != 2)
+                    errorParse();
+                if(insertCommand(line))
+                    break;
+                return;
+            
+            case 'm':
+                 if(numTokens != 3)
                     errorParse();
                 if(insertCommand(line))
                     break;
@@ -202,9 +218,18 @@ void* applyCommands(){
 
         char token, type;
         char name[MAX_INPUT_SIZE];
-       
+        char name2[MAX_INPUT_SIZE];
+        int numTokens;
 
-        int numTokens = sscanf(command, "%c %s %c", &token, name, &type);
+        sscanf(command, "%c", &token);
+        if(token == 'm'){
+            numTokens = sscanf(command, "%c %s %s", &token, name, name2);
+            //printf("%c %s %s\n",token, name, name2);
+        }else{
+            numTokens = sscanf(command, "%c %s %c", &token, name, &type);
+            //printf("%c %s %c\n",token, name, type);
+        }
+
         if (numTokens < 2) {
             fprintf(stderr, "Error: invalid command in Queue\n");
             exit(EXIT_FAILURE);
@@ -240,6 +265,12 @@ void* applyCommands(){
                 printf("Delete: %s\n", name);
                 delete(name,iNumberBuffer,&numLocks);
                 break;
+
+            case 'm':
+                printf("Move: %s %s\n", name, name2);
+                move(name, name2, iNumberBuffer, &numLocks);
+                break;
+                
             default: { /* error */
                 fprintf(stderr, "Error: command to apply\n");
                 exit(EXIT_FAILURE);
