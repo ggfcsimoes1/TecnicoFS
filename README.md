@@ -9,6 +9,7 @@
 | Miguel    | 11-11-2020     |  Still has syncronization problems|
 | Miguel & Gus   | 12-11-2020     |  Syncronization problems gone  |
 | Gus      | 12-11-2020 | Built runTests.sh, a simple testing script |
+| Miguel & Gus | 13-11-2020 | Move almost done |
 
 
 ## TO-DO
@@ -16,5 +17,5 @@
   - [x] Fine sync (Delete not working!)
   - [x] Fix delete functionality
   - [x] Add concurrent acess to the buffer array
-  - [ ] Move command
+  - [x] Move command
   - [x] Shell script

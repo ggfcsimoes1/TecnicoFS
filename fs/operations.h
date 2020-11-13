@@ -11,6 +11,7 @@ int lookup(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks);
 int move(char* name1, char* name2,pthread_rwlock_t *inumber_buffer[], int * num_locks);
 void print_tecnicofs_tree(FILE *fp);
 
-int lookup_rw(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks);
+int lookup_cd(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks);
+int lookup_m(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks);
 
 #endif /* FS_H */
