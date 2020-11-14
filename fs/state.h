@@ -48,6 +48,7 @@ inode_t inode_table[INODE_TABLE_SIZE];
 
 void lock(pthread_rwlock_t * lock, char rw);
 void unlock(pthread_rwlock_t * lock);
+void addToBuffer(int current_inumber, pthread_rwlock_t *iNumberBuffer[], int *numLocks);
 void unlockAll(int * numLocks, pthread_rwlock_t *iNumberBuffer[]);
 void lockInit(int inumber);
 void lockDestroy(int inumber);

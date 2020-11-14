@@ -120,7 +120,7 @@ int lookup_sub_node(char *name, DirEntry *entries) {
  *  - nodeType: type of node
  * Returns: SUCCESS or FAIL
  */
-int create(char *name, type nodeType, pthread_rwlock_t *inumber_buffer[],int * num_locks){
+int create(char *name, type nodeType, pthread_rwlock_t *iNumberBuffer[], int *numLocks){
 
 	int parent_inumber, child_inumber;
 	char *parent_name, *child_name, name_copy[MAX_FILE_NAME];
@@ -131,8 +131,8 @@ int create(char *name, type nodeType, pthread_rwlock_t *inumber_buffer[],int * n
 	
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
 	
-	parent_inumber = lookup_cd(parent_name, inumber_buffer, num_locks);
-	//printf("%d\n",*num_locks);
+	parent_inumber = lookup_cd(parent_name, iNumberBuffer, numLocks);
+	//printf("%d\n",*numLocks);
 	
 	if (parent_inumber == FAIL) {
 		printf("failed to create %s, invalid parent dir %s\n",
@@ -172,7 +172,7 @@ int create(char *name, type nodeType, pthread_rwlock_t *inumber_buffer[],int * n
 }
 /*existe um ficheiro/diretoria com o pathname atual e nao existe nenhum ficheiro/diretoria
 com o novo pathname*/
-int move(char* name1, char* name2,pthread_rwlock_t *inumber_buffer[],int * num_locks){
+int move(char *name1, char *name2,pthread_rwlock_t *iNumberBuffer[], int *numLocks){
 	int parent_inumber1, parent_inumber2, child_inumber1, child_inumber2;
 	char *parent_name1, *child_name1, *parent_name2, *child_name2, name_copy1[MAX_FILE_NAME], name_copy2[MAX_FILE_NAME];
 	
@@ -186,12 +186,12 @@ int move(char* name1, char* name2,pthread_rwlock_t *inumber_buffer[],int * num_l
 	split_parent_child_from_path(name_copy2, &parent_name2, &child_name2);
 
 	if (strcmp(name_copy1,name_copy2) >= 0){
-		parent_inumber2 = lookup_m(name_copy2, inumber_buffer, num_locks);
-		parent_inumber1 = lookup_m(name_copy1, inumber_buffer, num_locks);
+		parent_inumber2 = lookup_m(name_copy2, iNumberBuffer, numLocks);
+		parent_inumber1 = lookup_m(name_copy1, iNumberBuffer, numLocks);
 	}
 	else{
-		parent_inumber1 = lookup_m(name_copy1, inumber_buffer, num_locks);
-		parent_inumber2 = lookup_m(name_copy2, inumber_buffer, num_locks);
+		parent_inumber1 = lookup_m(name_copy1, iNumberBuffer, numLocks);
+		parent_inumber2 = lookup_m(name_copy2, iNumberBuffer, numLocks);
 	}
 	
 	if (parent_inumber1 == FAIL) {
@@ -268,7 +268,7 @@ int move(char* name1, char* name2,pthread_rwlock_t *inumber_buffer[],int * num_l
  *  - name: path of node
  * Returns: SUCCESS or FAIL
  */
-int delete(char *name, pthread_rwlock_t *inumber_buffer[],int * num_locks){
+int delete(char *name, pthread_rwlock_t *iNumberBuffer[],int * numLocks){
 
 	int parent_inumber, child_inumber;
 	char *parent_name, *child_name, name_copy[MAX_FILE_NAME];
@@ -280,7 +280,7 @@ int delete(char *name, pthread_rwlock_t *inumber_buffer[],int * num_locks){
 	
 	split_parent_child_from_path(name_copy, &parent_name, &child_name);
 
-	parent_inumber = lookup_cd(parent_name, inumber_buffer, num_locks);
+	parent_inumber = lookup_cd(parent_name, iNumberBuffer, numLocks);
 
 	if (parent_inumber == FAIL) {
 		printf("failed to delete %s, invalid parent dir %s\n",
@@ -336,7 +336,7 @@ int delete(char *name, pthread_rwlock_t *inumber_buffer[],int * num_locks){
  *  inumber: identifier of the i-node, if found
  *     FAIL: otherwise
  */
-int lookup(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
+int lookup(char *name, pthread_rwlock_t *iNumberBuffer[], int *numLocks) {
 	char full_path[MAX_FILE_NAME];
 	char delim[] = "/";
 	char *saveptr;
@@ -352,9 +352,10 @@ int lookup(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 
 	/* get root inode data */
 	lock(&inode_table[current_inumber].lock,'r');
-	inumber_buffer[*(num_locks)]= &inode_table[current_inumber].lock;
-	*(num_locks)+=1;
-	//printf("numLocks %d\n",*num_locks);
+	addToBuffer(current_inumber, iNumberBuffer, numLocks);
+	/*iNumberBuffer[*(numLocks)]= &inode_table[current_inumber].lock;
+	*(numLocks)+=1;*/
+	//printf("numLocks %d\n",*numLocks);
 	inode_get(current_inumber, &nType, &data);
 
 	char *path = strtok_r(full_path, delim,&saveptr);
@@ -362,9 +363,7 @@ int lookup(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 	/* search for all sub nodes */
 	while (path != NULL && (current_inumber = lookup_sub_node(path, data.dirEntries)) != FAIL) {
 		lock(&inode_table[current_inumber].lock,'r');
-		//puts("locking");
-		inumber_buffer[*(num_locks)] = &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+		addToBuffer(current_inumber, iNumberBuffer, numLocks);
 		inode_get(current_inumber, &nType, &data);
 		path = strtok_r(NULL, delim, &saveptr);
 	}
@@ -380,7 +379,7 @@ int lookup(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
  *  inumber: identifier of the i-node, if found
  *     FAIL: otherwise
  */
-int lookup_cd(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
+int lookup_cd(char *name, pthread_rwlock_t *iNumberBuffer[], int * numLocks) {
 	char full_path[MAX_FILE_NAME];
 	char delim[] = "/";
 	char *saveptr;
@@ -397,13 +396,11 @@ int lookup_cd(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 	/* get root inode data */
 	if(!strcmp(name,"")){
 		lock(&inode_table[current_inumber].lock,'w');
-		inumber_buffer[*(num_locks)]= &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+		addToBuffer(current_inumber, iNumberBuffer, numLocks);
 	}
 	else{
 		lock(&inode_table[current_inumber].lock,'r');
-		inumber_buffer[*(num_locks)]= &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+		addToBuffer(current_inumber, iNumberBuffer, numLocks);
 	}
 	
 	inode_get(current_inumber, &nType, &data);
@@ -414,16 +411,13 @@ int lookup_cd(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 	while (path != NULL && (current_inumber = lookup_sub_node(path, data.dirEntries)) != FAIL) {
 		if(path[strlen(path)-1]=='\0'){
 			lock(&inode_table[current_inumber].lock,'w');
-			inumber_buffer[*(num_locks)] = &inode_table[current_inumber].lock;
-			*(num_locks)+=1;
+			addToBuffer(current_inumber, iNumberBuffer, numLocks);
 			inode_get(current_inumber, &nType, &data);
 			break;
 		}
 		
 		lock(&inode_table[current_inumber].lock,'r');
-    	//printf("locking lookup_loop %d\n",current_inumber);
-		inumber_buffer[*(num_locks)] = &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+    	addToBuffer(current_inumber, iNumberBuffer, numLocks);
 		inode_get(current_inumber, &nType, &data);
 		path = strtok_r(NULL, delim, &saveptr);
 	}
@@ -438,7 +432,7 @@ int lookup_cd(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
  *  inumber: identifier of the i-node, if found
  *     FAIL: otherwise
  */
-int lookup_m(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
+int lookup_m(char *name, pthread_rwlock_t *iNumberBuffer[], int * numLocks) {
 	char full_path[MAX_FILE_NAME];
 	char delim[] = "/";
 	char *saveptr;
@@ -454,12 +448,10 @@ int lookup_m(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 
 	/* get root inode data */
 	if(!strcmp(name,"") && pthread_rwlock_trywrlock(&inode_table[current_inumber].lock) == 0 ){
-		inumber_buffer[*(num_locks)]= &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+		addToBuffer(current_inumber, iNumberBuffer, numLocks);
 	}
 	else if(pthread_rwlock_tryrdlock(&inode_table[current_inumber].lock) == 0){
-		inumber_buffer[*(num_locks)]= &inode_table[current_inumber].lock;
-		*(num_locks)+=1;
+		addToBuffer(current_inumber, iNumberBuffer, numLocks);
 	}
 	
 	inode_get(current_inumber, &nType, &data);
@@ -470,16 +462,14 @@ int lookup_m(char *name, pthread_rwlock_t *inumber_buffer[], int * num_locks) {
 	while (path != NULL && (current_inumber = lookup_sub_node(path, data.dirEntries)) != FAIL) {
 		if(path[strlen(path)-1]=='\0'){
 			if(pthread_rwlock_trywrlock(&inode_table[current_inumber].lock) == 0 ){
-				inumber_buffer[*(num_locks)] = &inode_table[current_inumber].lock;
-				*(num_locks)+=1;
+				addToBuffer(current_inumber, iNumberBuffer, numLocks);
 			}
 			inode_get(current_inumber, &nType, &data);
 			break;
 		}
 		
 		if(pthread_rwlock_tryrdlock(&inode_table[current_inumber].lock) == 0){
-			inumber_buffer[*(num_locks)] = &inode_table[current_inumber].lock;
-			*(num_locks)+=1;
+			addToBuffer(current_inumber, iNumberBuffer, numLocks);
 		}
 		inode_get(current_inumber, &nType, &data);
 		path = strtok_r(NULL, delim, &saveptr);

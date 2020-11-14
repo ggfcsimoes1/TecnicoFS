@@ -41,6 +41,16 @@ void unlock(pthread_rwlock_t * lock){
 	 }
 }
 
+/*Adds a lock to a thread-specific array which keeps track of whats being locked
+    lock: pthread_rwlock_t
+    current_inumber: inumber which holds the lock
+    numLocks: number of locks held in the array
+*/
+void addToBuffer(int current_inumber, pthread_rwlock_t *iNumberBuffer[], int *numLocks){
+	iNumberBuffer[*(numLocks)]= &inode_table[current_inumber].lock;
+	*(numLocks)+=1;
+}
+
 /*Unlocks every locked thread placed in the buffer array
     numLocks: int
     INumberBuffer[]: pthread_rwlock_t

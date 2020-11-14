@@ -14,10 +14,10 @@
 #include "fs/state.h"
 
 #define TRUE 1
+#define FALSE !TRUE
 #define MAX_COMMANDS 10
 #define MAX_INPUT_SIZE 100
 #define MAX_PARAMETERS 5
-
 
 int numberThreads = 0;
 char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
@@ -31,7 +31,6 @@ pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the lo
 struct timeval itime, ftime;
 pthread_cond_t canAdd, canGrab;
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
-
 
 /*--------------------------------------------------------------------------------*/
 
@@ -68,7 +67,6 @@ FILE* openFile(const char* filePath, const char *mode){
     return fp;
 }
 
-
 void globalLock(){
     if (pthread_mutex_lock(&mutex_global) != 0){
         error("Error: mishandled global lock");
@@ -81,12 +79,9 @@ void globalUnlock(){
     }  
 }
 
-
 /*--------------------------------------------------------------------------------*/
 
-
-int insertCommand(char* data) {
-    
+int insertCommand(char* data) {  
     while(numberCommands == MAX_COMMANDS) {
         pthread_cond_wait(&canAdd,&mutex_global);
     }
@@ -95,24 +90,19 @@ int insertCommand(char* data) {
     if(headQueueI==MAX_COMMANDS) {
         headQueueI = 0;
     }
-    pthread_cond_signal(&canGrab);
-    
+    pthread_cond_signal(&canGrab); 
     return 1;
 }
 
-void removeCommand(char ** command) {
-    
+void removeCommand(char ** command) {    
     while(numberCommands == 0){
         pthread_cond_wait(&canGrab,&mutex_global);
     }
-    
     numberCommands--;
-    *command = inputCommands[headQueueR++]; 
-    
+    *command = inputCommands[headQueueR++];    
     if(headQueueR==MAX_COMMANDS){
         headQueueR = 0;
-    }
-    
+    }   
     pthread_rwlock_wrlock(&rwlock);
     if(done_insert && numberCommands==0){
         pthread_cond_broadcast(&canAdd);
@@ -120,8 +110,7 @@ void removeCommand(char ** command) {
         pthread_rwlock_unlock(&rwlock);
         return;
     }
-    pthread_rwlock_unlock(&rwlock);
-    
+    pthread_rwlock_unlock(&rwlock);   
     pthread_cond_signal(&canAdd);
 }
 
@@ -140,18 +129,16 @@ void processInput(FILE *inputfile){
         globalLock();
         char token, type;
         char name[MAX_INPUT_SIZE];
-        char name2[MAX_INPUT_SIZE];
         int numTokens;
 
         sscanf(line, "%c", &token);
         if(token == 'm'){
+            char name2[MAX_INPUT_SIZE];
             numTokens = sscanf(line, "%c %s %s", &token, name, name2);
-            //printf("%c %s %s\n",token, name, name2);
         }else{
             numTokens = sscanf(line, "%c %s %c", &token, name, &type);
-            //printf("%c %s %c\n",token, name, type);
         }
-
+        
         /* perform minimal validation */
         if (numTokens < 1) {
             continue;
@@ -215,7 +202,6 @@ void* applyCommands(){
             continue;
         }
 
-
         char token, type;
         char name[MAX_INPUT_SIZE];
         char name2[MAX_INPUT_SIZE];
@@ -223,11 +209,9 @@ void* applyCommands(){
 
         sscanf(command, "%c", &token);
         if(token == 'm'){
-            numTokens = sscanf(command, "%c %s %s", &token, name, name2);
-            //printf("%c %s %s\n",token, name, name2);
+            numTokens = sscanf(command, "%c %s %s", &token, name, name2);  
         }else{
             numTokens = sscanf(command, "%c %s %c", &token, name, &type);
-            //printf("%c %s %c\n",token, name, type);
         }
 
         if (numTokens < 2) {
@@ -235,8 +219,7 @@ void* applyCommands(){
             exit(EXIT_FAILURE);
         }
         globalUnlock();
-
-         
+     
         int searchResult;
         switch (token) {
             case 'c':
@@ -278,23 +261,15 @@ void* applyCommands(){
         }
         globalLock();
         unlockAll(&numLocks, iNumberBuffer);
+        globalUnlock();
         if(done_apply){
-            globalUnlock();
             break;
         }
-        globalUnlock();    
     }
     return 0;
 }
 
-
-
-
 /*--------------------------------------------------------------------------------*/
-
-
-
-
 
 void createThread(int numberThreads, pthread_t tid[]){
     for (int i=0; i<numberThreads; i++){    /* Creating the threads */
@@ -312,9 +287,7 @@ void finishThread(int numberThreads, pthread_t tid[]){
     }
 }
 
-
 /*--------------------------------------------------------------------------------*/
-
 
 int main(int argc, char* argv[]){
     
@@ -326,22 +299,17 @@ int main(int argc, char* argv[]){
     pthread_cond_init(&canGrab, NULL);
   
     init_fs();  /* init filesystem */
-
     startTimer();   /* Starting the timer... */
     
-     
     createThread(numberThreads, tid);
     processInput(inputfile);    /* process input and print tree */
     fclose(inputfile);
-
-    
     finishThread(numberThreads, tid);
   
     stopTimer();    /* Stopping the timer... */
     getExecTime();
 
     print_tecnicofs_tree(outputfile); /* print input and close the output file...*/
-
     destroy_fs();   /* release allocated memory */
     exit(EXIT_SUCCESS);
 }

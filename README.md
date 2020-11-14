@@ -10,6 +10,7 @@
 | Miguel & Gus   | 12-11-2020     |  Syncronization problems gone  |
 | Gus      | 12-11-2020 | Built runTests.sh, a simple testing script |
 | Miguel & Gus | 13-11-2020 | Move almost done |
+| Gus | 14-11-2020 | Embelished code a little bit, removed some repetitions in code, added some comments |
 
 
 ## TO-DO
