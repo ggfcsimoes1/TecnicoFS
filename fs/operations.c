@@ -105,9 +105,12 @@ int lookup_sub_node(char *name, DirEntry *entries) {
 		return FAIL;
 	}
 	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
+		lock(&inode_table[entries[i].inumber].lock, 'r');
         if (entries[i].inumber != FREE_INODE && strcmp(entries[i].name, name) == 0) {
-            return entries[i].inumber;
+            unlock(&inode_table[entries[i].inumber].lock);
+			return entries[i].inumber;
         }
+		unlock(&inode_table[entries[i].inumber].lock);
     }
 	return FAIL;
 }
@@ -157,17 +160,21 @@ int create(char *name, type nodeType, pthread_rwlock_t *iNumberBuffer[], int *nu
 
 	/* create node and add entry to folder that contains new node */
 	child_inumber = inode_create(nodeType);
+	lock(&inode_table[child_inumber].lock, 'w');
 	if (child_inumber == FAIL) {
 		printf("failed to create %s in  %s, couldn't allocate inode\n",
 		        child_name, parent_name);
+		unlock(&inode_table[child_inumber].lock);
 		return FAIL;
 	}
 
 	if (dir_add_entry(parent_inumber, child_inumber, child_name) == FAIL) {
 		printf("could not add entry %s in dir %s\n",
 		       child_name, parent_name);
+		unlock(&inode_table[child_inumber].lock);
 		return FAIL;
 	}
+	unlock(&inode_table[child_inumber].lock);
 	return SUCCESS;
 }
 /*existe um ficheiro/diretoria com o pathname atual e nao existe nenhum ficheiro/diretoria
