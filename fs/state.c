@@ -151,7 +151,6 @@ int inode_create(type nType) {
                 else {
                     inode_table[inumber].data.fileContents = NULL;
                 }
-                unlock(&inode_table[inumber].lock);
                 return inumber;
             }
             unlock(&inode_table[inumber].lock);

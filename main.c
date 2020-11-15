@@ -125,7 +125,9 @@ void processInput(FILE *inputfile){
     char line[MAX_INPUT_SIZE];
     
     /* break loop with ^Z or ^D */
+    
     while (fgets(line, sizeof(line)/sizeof(char), inputfile)) {
+        
         globalLock();
         char token, type;
         char name[MAX_INPUT_SIZE];
@@ -259,12 +261,16 @@ void* applyCommands(){
                 exit(EXIT_FAILURE);
             }
         }
-        globalLock();
+        
         unlockAll(&numLocks, iNumberBuffer);
-        globalUnlock();
+        
+        pthread_rwlock_rdlock(&rwlock);
         if(done_apply){
+            pthread_rwlock_unlock(&rwlock);
             break;
         }
+        pthread_rwlock_unlock(&rwlock);
+        
     }
     return 0;
 }
