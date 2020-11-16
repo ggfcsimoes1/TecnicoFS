@@ -105,7 +105,6 @@ void removeCommand(char ** command) {
     }   
     pthread_rwlock_wrlock(&rwlock);
     if(done_insert && numberCommands==0){
-        pthread_cond_broadcast(&canAdd);
         done_apply=1;
         pthread_rwlock_unlock(&rwlock);
         return;
@@ -186,6 +185,7 @@ void processInput(FILE *inputfile){
     }
     pthread_rwlock_wrlock(&rwlock);
     done_insert=1;
+    pthread_cond_broadcast(&canAdd);
     pthread_rwlock_unlock(&rwlock);
 }
 
