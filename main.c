@@ -109,9 +109,9 @@ void removeCommand(char ** command) {
         pthread_rwlock_unlock(&rwlock);
         return;
     }
-       
+    pthread_rwlock_unlock(&rwlock);  
     pthread_cond_signal(&canAdd);
-    pthread_rwlock_unlock(&rwlock);
+    
 }
 
 void errorParse(){
@@ -183,10 +183,12 @@ void processInput(FILE *inputfile){
         }
         globalUnlock();
     }
-    pthread_rwlock_wrlock(&rwlock);
+    //pthread_rwlock_wrlock(&rwlock);
+    globalLock();
     done_insert=1;
     pthread_cond_broadcast(&canAdd);
-    pthread_rwlock_unlock(&rwlock);
+    globalUnlock();
+    //pthread_rwlock_unlock(&rwlock);
 }
 
 void* applyCommands(){
@@ -321,6 +323,8 @@ int main(int argc, char* argv[]){
     getExecTime();
 
     print_tecnicofs_tree(outputfile); /* print input and close the output file...*/
+    pthread_cond_destroy (&canAdd);
+    pthread_cond_destroy (&canGrab);
     destroy_fs();   /* release allocated memory */
     exit(EXIT_SUCCESS);
 }
