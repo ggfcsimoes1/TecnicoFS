@@ -110,8 +110,9 @@ void removeCommand(char ** command) {
         pthread_rwlock_unlock(&rwlock);
         return;
     }
-    pthread_rwlock_unlock(&rwlock);   
+       
     pthread_cond_signal(&canAdd);
+    pthread_rwlock_unlock(&rwlock);
 }
 
 void errorParse(){
@@ -297,8 +298,9 @@ void finishThread(int numberThreads, pthread_t tid[]){
 
 int main(int argc, char* argv[]){
     
-    pthread_t tid[numberThreads];   /* Declaring the thread pool */
+       /* Declaring the thread pool */
     numberThreads = getNumThreads(argc, argv[3]);
+    pthread_t tid[numberThreads];
     FILE *inputfile = openFile(argv[1], "r");
     FILE *outputfile = openFile(argv[2], "w");
     pthread_cond_init(&canAdd, NULL);
@@ -307,10 +309,13 @@ int main(int argc, char* argv[]){
     init_fs();  /* init filesystem */
     startTimer();   /* Starting the timer... */
     
+    
     createThread(numberThreads, tid);
     processInput(inputfile);    /* process input and print tree */
     fclose(inputfile);
+    
     finishThread(numberThreads, tid);
+    
   
     stopTimer();    /* Stopping the timer... */
     getExecTime();
