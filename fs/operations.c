@@ -161,12 +161,13 @@ int create(char *name, type nodeType, pthread_rwlock_t *iNumberBuffer[], int *nu
 
 	/* create node and add entry to folder that contains new node */
 	child_inumber = inode_create(nodeType);
-	addToBuffer(child_inumber, iNumberBuffer, numLocks);
+	
 	if (child_inumber == FAIL) {
 		printf("failed to create %s in  %s, couldn't allocate inode\n",
 		        child_name, parent_name);
 		return FAIL;
 	}
+	addToBuffer(child_inumber, iNumberBuffer, numLocks);
 
 	if (dir_add_entry(parent_inumber, child_inumber, child_name) == FAIL) {
 		printf("could not add entry %s in dir %s\n",

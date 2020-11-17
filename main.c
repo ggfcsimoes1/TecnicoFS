@@ -95,23 +95,22 @@ int insertCommand(char* data) {
 }
 
 void removeCommand(char ** command) {    
-    while(numberCommands == 0){
+    //printf("insert %d\n",done_insert);
+    while(numberCommands == 0 && done_insert==0){
         pthread_cond_wait(&canGrab,&mutex_global);
     }
+    if(done_insert && numberCommands==0){
+        done_apply=1;
+        return;
+    }
+
     numberCommands--;
     *command = inputCommands[headQueueR++];    
     if(headQueueR==MAX_COMMANDS){
         headQueueR = 0;
     }   
-    pthread_rwlock_wrlock(&rwlock);
-    if(done_insert && numberCommands==0){
-        done_apply=1;
-        pthread_rwlock_unlock(&rwlock);
-        return;
-    }
-    pthread_rwlock_unlock(&rwlock);  
-    pthread_cond_signal(&canAdd);
     
+    pthread_cond_signal(&canAdd);
 }
 
 void errorParse(){
@@ -183,12 +182,11 @@ void processInput(FILE *inputfile){
         }
         globalUnlock();
     }
-    //pthread_rwlock_wrlock(&rwlock);
+
     globalLock();
     done_insert=1;
-    pthread_cond_broadcast(&canAdd);
+    pthread_cond_broadcast(&canGrab);
     globalUnlock();
-    //pthread_rwlock_unlock(&rwlock);
 }
 
 void* applyCommands(){
@@ -203,8 +201,12 @@ void* applyCommands(){
         char* command=NULL;
         removeCommand(&command);
 
-        if (command == NULL){
+        /*if (command == NULL){
             continue;
+        }*/
+        if(done_apply){
+            globalUnlock();
+            break;  
         }
 
         char token, type;
@@ -264,16 +266,7 @@ void* applyCommands(){
                 exit(EXIT_FAILURE);
             }
         }
-        
         unlockAll(&numLocks, iNumberBuffer);
-        
-        pthread_rwlock_rdlock(&rwlock);
-        if(done_apply){
-            pthread_rwlock_unlock(&rwlock);
-            break;
-        }
-        pthread_rwlock_unlock(&rwlock);
-        
     }
     return 0;
 }
