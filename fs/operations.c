@@ -106,12 +106,9 @@ int lookup_sub_node(char *name, DirEntry *entries) {
 		return FAIL;
 	}
 	for (int i = 0; i < MAX_DIR_ENTRIES; i++) {
-		//lock(&inode_table[entries[i].inumber].lock, 'r');
         if (entries[i].inumber != FREE_INODE && strcmp(entries[i].name, name) == 0) {
-            //unlock(&inode_table[entries[i].inumber].lock);
 			return entries[i].inumber;
         }
-		//unlock(&inode_table[entries[i].inumber].lock);
     }
 	return FAIL;
 }
@@ -216,8 +213,6 @@ int move(char *name1, char *name2,pthread_rwlock_t *iNumberBuffer[], int *numLoc
 		return FAIL;
 	}
 
-	
-	
 	child_inumber1 = lookup_sub_node(child_name1, pdata1.dirEntries);
 
 	if (child_inumber1 == FAIL) {
@@ -245,7 +240,7 @@ int move(char *name1, char *name2,pthread_rwlock_t *iNumberBuffer[], int *numLoc
 
 	child_inumber2 = lookup_sub_node(child_name2, pdata2.dirEntries);
 
-	if (child_inumber2 != FAIL) {
+	if (child_inumber2 != FAIL || child_inumber1 == parent_inumber2) {
 		printf("could not move %s, already exists in dir %s\n",
 		       name2, parent_name2);
 		return FAIL;
