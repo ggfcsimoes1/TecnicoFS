@@ -24,13 +24,13 @@ char inputCommands[MAX_COMMANDS][MAX_INPUT_SIZE];
 int numberCommands = 0;
 int headQueueR = 0; 
 int headQueueI = 0;
-int done_insert = 0;
-int done_apply = 0;
+int doneInsert = FALSE;
+int doneApply = FALSE;
 
-pthread_mutex_t mutex_global = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
+pthread_mutex_t mutexGlobal = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
 struct timeval itime, ftime;
 pthread_cond_t canAdd, canGrab;
-pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
+
 
 /*--------------------------------------------------------------------------------*/
 
@@ -68,13 +68,13 @@ FILE* openFile(const char* filePath, const char *mode){
 }
 
 void globalLock(){
-    if (pthread_mutex_lock(&mutex_global) != 0){
+    if (pthread_mutex_lock(&mutexGlobal) != 0){
         error("Error: mishandled global lock");
     }  
 }
 
 void globalUnlock(){
-    if (pthread_mutex_unlock(&mutex_global) != 0){
+    if (pthread_mutex_unlock(&mutexGlobal) != 0){
         error("Error: mishandled global lock");
     }  
 }
@@ -83,33 +83,32 @@ void globalUnlock(){
 
 int insertCommand(char* data) {  
     while(numberCommands == MAX_COMMANDS) {
-        pthread_cond_wait(&canAdd,&mutex_global);
+        pthread_cond_wait(&canAdd,&mutexGlobal);
     }
     numberCommands++;
     strcpy(inputCommands[headQueueI++], data);
-    if(headQueueI==MAX_COMMANDS) {
+    if(headQueueI==MAX_COMMANDS) {  /*Circular buffer*/
         headQueueI = 0;
     }
     pthread_cond_signal(&canGrab); 
     return 1;
 }
 
-void removeCommand(char ** command) {    
-    //printf("insert %d\n",done_insert);
-    while(numberCommands == 0 && done_insert==0){
-        pthread_cond_wait(&canGrab,&mutex_global);
+void removeCommand(char ** command) {     
+    while(numberCommands == 0 && !doneInsert){        /*If there are still commands to be inserted*/
+        pthread_cond_wait(&canGrab,&mutexGlobal);
     }
-    if(done_insert && numberCommands==0){
-        done_apply=1;
+    
+    if(doneInsert && numberCommands==0){    /*If there aren't, stop processing */
+        doneApply=1;
         return;
     }
 
     numberCommands--;
-    *command = inputCommands[headQueueR++];    
-    if(headQueueR==MAX_COMMANDS){
+    *command = inputCommands[headQueueR++];   
+    if(headQueueR==MAX_COMMANDS){ /*Circular buffer*/
         headQueueR = 0;
     }   
-    
     pthread_cond_signal(&canAdd);
 }
 
@@ -132,8 +131,9 @@ void processInput(FILE *inputfile){
         char name[MAX_INPUT_SIZE];
         int numTokens;
 
-        sscanf(line, "%c", &token);
-        if(token == 'm'){
+        sscanf(line, "%c", &token); /*Checking if the command is "move"*/
+        
+        if(token == 'm'){ /*"move" scans for different paramaters*/
             char name2[MAX_INPUT_SIZE];
             numTokens = sscanf(line, "%c %s %s", &token, name, name2);
         }else{
@@ -166,7 +166,7 @@ void processInput(FILE *inputfile){
                     break;
                 return;
             
-            case 'm':
+            case 'm':               
                  if(numTokens != 3)
                     errorParse();
                 if(insertCommand(line))
@@ -184,15 +184,15 @@ void processInput(FILE *inputfile){
     }
 
     globalLock();
-    done_insert=1;
-    pthread_cond_broadcast(&canGrab);
+    doneInsert=TRUE; /*Setting the flag when EOF is reached */
+    pthread_cond_broadcast(&canGrab); /*Releasing threads blocked by the "producer"*/
     globalUnlock();
 }
 
 void* applyCommands(){
 
-    pthread_rwlock_t * iNumberBuffer[INODE_TABLE_SIZE];
-    int numLocks = 0;
+    pthread_rwlock_t * iNumberBuffer[INODE_TABLE_SIZE];  /*Buffer used to keep track of the inode locks, during syncronization*/
+    int numLocks = 0;  /*index of "iNumberBuffer"*/
     
     while (TRUE){
 
@@ -200,11 +200,7 @@ void* applyCommands(){
 
         char* command=NULL;
         removeCommand(&command);
-
-        /*if (command == NULL){
-            continue;
-        }*/
-        if(done_apply){
+        if(doneApply){  /*If every command has been processed*/
             globalUnlock();
             break;  
         }
@@ -214,7 +210,7 @@ void* applyCommands(){
         char name2[MAX_INPUT_SIZE];
         int numTokens;
 
-        sscanf(command, "%c", &token);
+        sscanf(command, "%c", &token); 
         if(token == 'm'){
             numTokens = sscanf(command, "%c %s %s", &token, name, name2);  
         }else{
@@ -292,32 +288,32 @@ void finishThread(int numberThreads, pthread_t tid[]){
 /*--------------------------------------------------------------------------------*/
 
 int main(int argc, char* argv[]){
-    
-       /* Declaring the thread pool */
     numberThreads = getNumThreads(argc, argv[3]);
-    pthread_t tid[numberThreads];
+    pthread_t tid[numberThreads]; /* Declaring the thread pool */
     FILE *inputfile = openFile(argv[1], "r");
     FILE *outputfile = openFile(argv[2], "w");
-    pthread_cond_init(&canAdd, NULL);
+    
+    pthread_cond_init(&canAdd, NULL); /*Initializing conditional variables*/
     pthread_cond_init(&canGrab, NULL);
   
     init_fs();  /* init filesystem */
     startTimer();   /* Starting the timer... */
     
-    
     createThread(numberThreads, tid);
+    
     processInput(inputfile);    /* process input and print tree */
     fclose(inputfile);
     
     finishThread(numberThreads, tid);
     
-  
     stopTimer();    /* Stopping the timer... */
     getExecTime();
 
     print_tecnicofs_tree(outputfile); /* print input and close the output file...*/
-    pthread_cond_destroy (&canAdd);
+    
+    pthread_cond_destroy (&canAdd); /*Destroying conditional variables*/
     pthread_cond_destroy (&canGrab);
+    
     destroy_fs();   /* release allocated memory */
     exit(EXIT_SUCCESS);
 }

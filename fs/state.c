@@ -53,7 +53,7 @@ void addToBuffer(int current_inumber, pthread_rwlock_t *iNumberBuffer[], int *nu
 
 /*Unlocks every locked thread placed in the buffer array
     numLocks: int
-    INumberBuffer[]: pthread_rwlock_t
+    iNumberBuffer[]: pthread_rwlock_t
 */
 void unlockAll(int * numLocks, pthread_rwlock_t *iNumberBuffer[]){
     while (*(numLocks) > 0){
@@ -132,7 +132,7 @@ int inode_create(type nType) {
     insert_delay(DELAY);
 
     for (int inumber = 0; inumber < INODE_TABLE_SIZE; inumber++) {
-        if(pthread_rwlock_trywrlock(&inode_table[inumber].lock)!=0){
+        if(pthread_rwlock_trywrlock(&inode_table[inumber].lock)!=0){ /*Only acquires locks when the inode is free to be created*/
             continue;
         }
         else{
@@ -153,7 +153,7 @@ int inode_create(type nType) {
                 }
                 return inumber;
             }
-            unlock(&inode_table[inumber].lock);
+            unlock(&inode_table[inumber].lock); /*Releases the lock when the inode isn't free*/
             continue;
         }
     }
@@ -175,8 +175,6 @@ int inode_delete(int inumber) {
         printf("inode_delete: invalid inumber\n");
         return FAIL;
     } 
-
-
     inode_table[inumber].nodeType = T_NONE;
 
     /* see inode_table_destroy function */

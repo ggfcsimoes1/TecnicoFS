@@ -11,11 +11,13 @@
 | Gus      | 12-11-2020 | Built runTests.sh, a simple testing script |
 | Miguel & Gus | 13-11-2020 | Move almost done |
 | Gus | 14-11-2020 | Embelished code a little bit, removed some repetitions in code, added some comments |
+| Miguel & Gus | 17-11-2020 | Fixed circular buffer flags; Fixed move's verifications |
+| Miguel & Gus | 18-11-2020 | GANDA PROJETO ACABADO MALTINHA |
 
 
 ## TO-DO
 
-  - [x] Fine sync (Delete not working!)
+  - [x] Fine sync
   - [x] Fix delete functionality
   - [x] Add concurrent acess to the buffer array
   - [x] Move command
