@@ -6,11 +6,11 @@
 #include <sys/un.h>
 #include <stdio.h>
 
+#define MAX_BUFFER_SIZE 1024
 #define MAX_INPUT_SIZE 100
 #define CLNAME "/tmp/client"
 
 char * servername;
-
 int sockfd;
 socklen_t clilen;
 struct sockaddr_un client_addr;
@@ -28,60 +28,67 @@ int setSockAddrUn(char *path, struct sockaddr_un *addr) {
   return SUN_LEN(addr);
 }
 
-
-
-int tfsCreate(char *command) {
-  socklen_t servlen;
+void sendToSocket(char* command){
   struct sockaddr_un serv_addr;
-  char buffer[1024];
-  
-  servlen = setSockAddrUn(servername, &serv_addr);
-  
-  //"Hello World";
-  //char *msg = nodeType + ' ' + filename + '\0';
-
+  socklen_t servlen = setSockAddrUn(servername, &serv_addr);
   if (sendto(sockfd, command , strlen(command)+1, 0, (struct sockaddr *) &serv_addr, servlen) < 0) {
     perror("client: sendto error");
     exit(EXIT_FAILURE);
   } 
+}
 
+void receiveFromSocket(char *buffer){
   if (recvfrom(sockfd, buffer, sizeof(buffer), 0, 0, 0) < 0) {
     perror("client: recvfrom error");
     exit(EXIT_FAILURE);
-  } 
+  }
+}
+
+int tfsCreate(char *command) {
+  char buffer[MAX_BUFFER_SIZE];
+
+  sendToSocket(command);
+  receiveFromSocket(buffer);
   
-  return 0;
+  if(!strcmp(buffer,"s")){
+    return 0;
+  }
+  return -1;
 }
 
 int tfsDelete(char *command) {
+  char buffer[MAX_BUFFER_SIZE];
+
+  sendToSocket(command);
+  receiveFromSocket(buffer);
+  
+  if(!strcmp(buffer,"s")){
+    return 0;
+  }
   return -1;
 }
 
-int tfsMove(char *command) {
+int tfsMove(char *command){
+  char buffer[MAX_BUFFER_SIZE];
+
+  sendToSocket(command);
+  receiveFromSocket(buffer);
+  
+  if(!strcmp(buffer,"s")){
+    return 0;
+  }
   return -1;
 }
+
 
 int tfsLookup(char *command) {
-  socklen_t servlen;
-  struct sockaddr_un serv_addr;
-  char buffer[1024];
+  char buffer[MAX_BUFFER_SIZE];
+
+  sendToSocket(command);
+  receiveFromSocket(buffer);
   
-  servlen = setSockAddrUn(servername, &serv_addr);
-
-  //char * msg = "Hello World";
-
-  if (sendto(sockfd, command , strlen(command)+1, 0, (struct sockaddr *) &serv_addr, servlen) < 0) {
-    perror("client: sendto error");
-    exit(EXIT_FAILURE);
-  } 
-
-  if (recvfrom(sockfd, buffer, sizeof(buffer), 0, 0, 0) < 0) {
-    perror("client: recvfrom error");
-    exit(EXIT_FAILURE);
-  } 
-
-  if(strcmp(buffer,"successful")){
-    exit(EXIT_SUCCESS);
+  if(!strcmp(buffer,"s")){
+    return 0;
   }
   return -1;
 }

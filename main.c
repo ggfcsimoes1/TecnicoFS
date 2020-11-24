@@ -26,6 +26,8 @@
 
 #define TRUE 1
 #define FALSE !TRUE
+#define FAIL -1
+#define SUCCESS 0
 #define MAX_COMMANDS 10
 #define MAX_INPUT_SIZE 100
 #define MAX_PARAMETERS 5
@@ -54,7 +56,7 @@ void getExecTime(){ /* Function that calculates the program's run time*/
 
 int getNumThreads(int argc, char* numT){
     int numThreads = atoi(numT);
-    if (argc != 2){
+    if (argc != 3){
         error("Error: invalid parameters amount");  
     }
     if(!numThreads || numThreads <= 0){         /* If the conversion is invalid / thread number is negative ... */
@@ -120,7 +122,7 @@ int applyCommands(char * command){
 
     pthread_rwlock_t * iNumberBuffer[INODE_TABLE_SIZE];  /*Buffer used to keep track of the inode locks, during syncronization*/
     int numLocks = 0;  /*index of "iNumberBuffer"*/
-    
+    int operationSuccessful = SUCCESS;
 
     globalLock();
 
@@ -148,11 +150,14 @@ int applyCommands(char * command){
             switch (type) {
                 case 'f': 
                     printf("Create file: %s\n", name);
-                    create(name, T_FILE,iNumberBuffer,&numLocks);
+                    if(create(name, T_FILE,iNumberBuffer,&numLocks) == FAIL)
+                        operationSuccessful = FAIL;
                     break;
                 case 'd':
                     printf("Create directory: %s\n", name);
-                    create(name, T_DIRECTORY,iNumberBuffer,&numLocks);
+                    if(create(name, T_DIRECTORY,iNumberBuffer,&numLocks) == FAIL)
+                        operationSuccessful = FAIL;
+                    
                     break;
                 default:
                     fprintf(stderr, "Error: invalid node type\n");
@@ -163,17 +168,21 @@ int applyCommands(char * command){
             searchResult = lookup(name,iNumberBuffer,&numLocks);
             if (searchResult >= 0)
                 printf("Search: %s found\n", name);
-            else
-                printf("Search: %s not found\n", name);     
+            else{
+                printf("Search: %s not found\n", name);
+                operationSuccessful = FAIL;
+            }     
             break;
         case 'd':
             printf("Delete: %s\n", name);
-            delete(name,iNumberBuffer,&numLocks);
+            if(delete(name,iNumberBuffer,&numLocks) == FAIL)
+                operationSuccessful = FAIL;
             break;
 
         case 'm':
             printf("Move: %s %s\n", name, name2);
-            move(name, name2, iNumberBuffer, &numLocks);
+            if(move(name, name2, iNumberBuffer, &numLocks) == FAIL)
+                operationSuccessful = FAIL;
             break;
             
         default: { /* error */
@@ -182,7 +191,7 @@ int applyCommands(char * command){
         }
     }
     unlockAll(&numLocks, iNumberBuffer);
-    return 0;
+    return operationSuccessful;
 }
 
 void *serverApplyCommands(){
@@ -200,11 +209,11 @@ void *serverApplyCommands(){
         //Preventivo, caso o cliente nao tenha terminado a mensagem em '\0', 
         in_buffer[c]='\0';
         
-        if (applyCommands(in_buffer)){
-            c = sprintf(out_buffer, "successful");
+        if (applyCommands(in_buffer) == 0){
+            c = sprintf(out_buffer, "s");
         }
         else{
-            c = sprintf(out_buffer, "failed operation");
+            c = sprintf(out_buffer, "f");
         }
         sendto(sockfd, out_buffer, c+1, 0, (struct sockaddr *)&client_addr, addrlen);
     }
@@ -234,11 +243,11 @@ void finishThread(int numberThreads, pthread_t tid[]){
 
 
 int main(int argc, char* argv[]){
-  
-   if (serverMount(SNAME) == 0)
-      printf("Mounted! (socket = %s)\n", SNAME);
+    /*SNAME -> argv[2]*/
+   if (serverMount(argv[2]) == 0)
+      printf("Mounted! (socket = %s)\n", argv[2]);
     else {
-      fprintf(stderr, "Unable to mount socket: %s\n", SNAME);
+      fprintf(stderr, "Unable to mount socket: %s\n", argv[2]);
       exit(EXIT_FAILURE);
     }
     
