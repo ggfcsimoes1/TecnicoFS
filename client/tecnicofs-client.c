@@ -54,14 +54,14 @@ void *processInput() {
                 }
                 switch (arg2[0]) {
                     case 'f':
-                        res = tfsCreate(arg1, 'f');
+                        res = tfsCreate(line);
                         if (!res)
                           printf("Created file: %s\n", arg1);
                         else
                           printf("Unable to create file: %s\n", arg1);
                         break;
                     case 'd':
-                        res = tfsCreate(arg1, 'd');
+                        res = tfsCreate(line);
                         if (!res)
                           printf("Created directory: %s\n", arg1);
                         else
@@ -74,7 +74,7 @@ void *processInput() {
             case 'l':
                 if(numTokens != 2)
                     errorParse();
-                res = tfsLookup(arg1);
+                res = tfsLookup(line);
                 if (res >= 0)
                     printf("Search: %s found\n", arg1);
                 else
@@ -83,7 +83,7 @@ void *processInput() {
             case 'd':
                 if(numTokens != 2)
                     errorParse();
-                res = tfsDelete(arg1);
+                res = tfsDelete(line);
                 if (!res)
                   printf("Deleted: %s\n", arg1);
                 else
@@ -92,7 +92,7 @@ void *processInput() {
             case 'm':
                 if(numTokens != 3)
                     errorParse();
-                res = tfsMove(arg1, arg2);
+                res = tfsMove(line);
                 if (!res)
                   printf("Moved: %s to %s\n", arg1, arg2);
                 else

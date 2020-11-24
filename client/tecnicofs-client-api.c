@@ -6,6 +6,7 @@
 #include <sys/un.h>
 #include <stdio.h>
 
+#define MAX_INPUT_SIZE 100
 #define CLNAME "/tmp/client"
 
 char * servername;
@@ -29,16 +30,17 @@ int setSockAddrUn(char *path, struct sockaddr_un *addr) {
 
 
 
-int tfsCreate(char *filename, char nodeType) {
+int tfsCreate(char *command) {
   socklen_t servlen;
   struct sockaddr_un serv_addr;
   char buffer[1024];
   
   servlen = setSockAddrUn(servername, &serv_addr);
+  
+  //"Hello World";
+  //char *msg = nodeType + ' ' + filename + '\0';
 
-  char * msg = "Hello World";
-
-  if (sendto(sockfd, msg , strlen(msg)+1, 0, (struct sockaddr *) &serv_addr, servlen) < 0) {
+  if (sendto(sockfd, command , strlen(command)+1, 0, (struct sockaddr *) &serv_addr, servlen) < 0) {
     perror("client: sendto error");
     exit(EXIT_FAILURE);
   } 
@@ -51,15 +53,36 @@ int tfsCreate(char *filename, char nodeType) {
   return 0;
 }
 
-int tfsDelete(char *path) {
+int tfsDelete(char *command) {
   return -1;
 }
 
-int tfsMove(char *from, char *to) {
+int tfsMove(char *command) {
   return -1;
 }
 
-int tfsLookup(char *path) {
+int tfsLookup(char *command) {
+  socklen_t servlen;
+  struct sockaddr_un serv_addr;
+  char buffer[1024];
+  
+  servlen = setSockAddrUn(servername, &serv_addr);
+
+  //char * msg = "Hello World";
+
+  if (sendto(sockfd, command , strlen(command)+1, 0, (struct sockaddr *) &serv_addr, servlen) < 0) {
+    perror("client: sendto error");
+    exit(EXIT_FAILURE);
+  } 
+
+  if (recvfrom(sockfd, buffer, sizeof(buffer), 0, 0, 0) < 0) {
+    perror("client: recvfrom error");
+    exit(EXIT_FAILURE);
+  } 
+
+  if(strcmp(buffer,"successful")){
+    exit(EXIT_SUCCESS);
+  }
   return -1;
 }
 
