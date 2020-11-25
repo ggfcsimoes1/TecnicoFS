@@ -13,14 +13,14 @@
 | Miguel & Gus | 13-11-2020 | Started 'move' command, almost done, improved code. |
 | Gus | 14-11-2020 | Embelished code a little bit, removed some repetitions in code, added some comments |
 | Miguel & Gus | 17-11-2020 | Fixed circular buffer flags; Fixed move's verifications. No longer has bugs. |
-| Miguel & Gus | 18-11-2020 | **Finished the 2nd requisite** |
-| -------- | 23-11-2020 | **3rd Requisite out** |
+| Miguel & Gus | 18-11-2020 | **Finished the 2nd Requirement** |
+| -------- | 23-11-2020 | **3rd Requirement out** |
 | Miguel & Gus | 23-11-2020 | Created tfsMount, tfsCreate, tfsMove, tfsLookup, tfsDelete |
 | Miguel & Gus | 25-11-2020 | Created tfsPrint, improved makefile. |
 
 ## TO-DO
 
-# 2nd Requisite
+# 2nd Requirement
 
   - [x] Fine sync
   - [x] Fix delete functionality
@@ -28,7 +28,7 @@
   - [x] Move command
   - [x] Shell script
 
-# 3rd Requisite
+# 3rd Requirement
 
   - [x] Mount socket
   - [x] tfsXXX Api implementation *Check tfsPrint*
