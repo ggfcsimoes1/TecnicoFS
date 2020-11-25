@@ -54,6 +54,14 @@ void getExecTime(){ /* Function that calculates the program's run time*/
     printf("TecnicoFS completed in %.4f seconds.\n", seconds + milliseconds);
 }
 
+FILE* openFile(const char* filePath, const char *mode){
+    FILE *fp = fopen(filePath, mode);
+    if(!fp){
+        error("Error: invalid file path");
+    }
+    return fp;
+}
+
 int getNumThreads(int argc, char* numT){
     int numThreads = atoi(numT);
     if (argc != 3){
@@ -183,6 +191,11 @@ int applyCommands(char * command){
             printf("Move: %s %s\n", name, name2);
             if(move(name, name2, iNumberBuffer, &numLocks) == FAIL)
                 operationSuccessful = FAIL;
+            break;
+
+            case 'p':
+            printf("Print filesystem to: %s \n", name);
+            print_tecnicofs_tree(openFile(name, "w"));
             break;
             
         default: { /* error */

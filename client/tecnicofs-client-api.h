@@ -8,6 +8,7 @@ int tfsDelete(char *line);
 int tfsLookup(char *line);
 int tfsMove(char *line);
 int tfsMount(char* serverName);
+int tfsPrint(char *command);
 int tfsUnmount();
 
 void sendToSocket(char* command);
