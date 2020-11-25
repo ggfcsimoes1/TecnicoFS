@@ -1,5 +1,10 @@
-# Makefile, versao 1
-# Sistemas Operativos, DEI/IST/ULisboa 2020-21
+# Makefile, versao 2
+# Sistemas Operativos, DEI/IST/ULisboa 2020-21, Changed by Miguel & Gustavo
+
+# -----------------------------------------------------------------------------------------------------------------------
+# | The Makefile now compiles every necessary file for execution and places the executable files in the main directory. |
+# | It also cleans the txt files created by the program in the 'outputs' folder. Added for conveniency purposes.		|
+# -----------------------------------------------------------------------------------------------------------------------
 
 CC   = gcc
 LD   = gcc
@@ -33,11 +38,9 @@ client/tecnicofs-client.o: client/tecnicofs-client.c tecnicofs-api-constants.h c
 tecnicofs-client: client/tecnicofs-client-api.o client/tecnicofs-client.o
 	$(LD) $(CFLAGS) $(LDFLAGS) -o tecnicofs-client client/tecnicofs-client-api.o client/tecnicofs-client.o
 
-
-
 clean:
 	@echo Cleaning...
-	rm -f fs/*.o *.o tecnicofs client/*.o tecnicofs-client
+	rm -f fs/*.o *.o tecnicofs client/*.o tecnicofs-client outputs/*.txt
 
 run: tecnicofs
 	./tecnicofs
