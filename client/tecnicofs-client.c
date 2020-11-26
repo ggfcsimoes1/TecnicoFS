@@ -130,7 +130,13 @@ int main(int argc, char* argv[]) {
 
     processInput();
 
-    tfsUnmount();
-
+    if (tfsUnmount() == 0){
+      printf("Unmounted! (socket = %s)\n",serverName);
+    }
+    else{
+      fprintf(stderr, "Unable to unmount socket: %s\n", serverName);
+      exit(EXIT_FAILURE);
+    }
+    
     exit(EXIT_SUCCESS);
 }

@@ -37,6 +37,10 @@ int sockfd;
 pthread_mutex_t mutexGlobal = PTHREAD_MUTEX_INITIALIZER; /* Initializing the locks used for syncing threads*/
 struct timeval itime, ftime;
 
+int fsChangingCommands = 0;
+pthread_cond_t canPrint = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t printLock = PTHREAD_MUTEX_INITIALIZER;
+
 
 /*--------------------------------------------------------------------------------*/
 
@@ -158,14 +162,19 @@ int applyCommands(char * command){
             switch (type) {
                 case 'f': 
                     printf("Create file: %s\n", name);
+                    fsChangingCommands++;
                     if(create(name, T_FILE,iNumberBuffer,&numLocks) == FAIL)
                         operationSuccessful = FAIL;
+                    fsChangingCommands--;
+                    pthread_cond_signal(&canPrint);
                     break;
                 case 'd':
                     printf("Create directory: %s\n", name);
+                    fsChangingCommands++;
                     if(create(name, T_DIRECTORY,iNumberBuffer,&numLocks) == FAIL)
                         operationSuccessful = FAIL;
-                    
+                    fsChangingCommands--;
+                    pthread_cond_signal(&canPrint);
                     break;
                 default:
                     fprintf(stderr, "Error: invalid node type\n");
@@ -183,20 +192,32 @@ int applyCommands(char * command){
             break;
         case 'd':
             printf("Delete: %s\n", name);
+            fsChangingCommands++;
             if(delete(name,iNumberBuffer,&numLocks) == FAIL)
                 operationSuccessful = FAIL;
+            fsChangingCommands--;
+            pthread_cond_signal(&canPrint);
             break;
 
         case 'm':
             printf("Move: %s %s\n", name, name2);
+            fsChangingCommands++;
             if(move(name, name2, iNumberBuffer, &numLocks) == FAIL)
                 operationSuccessful = FAIL;
+            fsChangingCommands--;
+            pthread_cond_signal(&canPrint);
             break;
 
-            case 'p':
-            printf("Print filesystem to: %s \n", name);
+        case 'p':
+            pthread_mutex_lock(&printLock);
+            while (fsChangingCommands != 0)
+                pthread_cond_wait(&canPrint, &printLock);
+            
             print_tecnicofs_tree(openFile(name, "w"));
+            pthread_mutex_unlock(&printLock);
             break;
+            
+            printf("Print filesystem to: %s \n", name);
             
         default: { /* error */
             fprintf(stderr, "Error: command to apply\n");
@@ -277,8 +298,6 @@ int main(int argc, char* argv[]){
     stopTimer();     /*Stopping the timer...*/ 
     getExecTime();
 
-    //print_tecnicofs_tree(outputfile); /*print input and close the output file...*/
-    
         
     destroy_fs();    /*release allocated memory*/ 
     exit(EXIT_SUCCESS);

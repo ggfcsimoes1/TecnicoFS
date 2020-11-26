@@ -17,10 +17,6 @@ int sockfd;
 socklen_t clilen;
 struct sockaddr_un client_addr;
 
-int fsChangingCommands = 0;
-pthread_cond_t canPrint = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t printLock = PTHREAD_MUTEX_INITIALIZER;
-
 
 int setSockAddrUn(char *path, struct sockaddr_un *addr) {
 
@@ -52,54 +48,38 @@ void receiveFromSocket(char *buffer){
 
 int tfsCreate(char *command) {
   char buffer[MAX_BUFFER_SIZE];
-  
-  fsChangingCommands++;
 
   sendToSocket(command);
   receiveFromSocket(buffer);
   
   if(!strcmp(buffer,"s")){
-    fsChangingCommands--;
-    pthread_cond_signal(&canPrint);
     return 0;
   }
-  fsChangingCommands--;
-  pthread_cond_signal(&canPrint);
+  
   return -1;
 }
 
 int tfsDelete(char *command) {
   char buffer[MAX_BUFFER_SIZE];
 
-  fsChangingCommands++;
-
   sendToSocket(command);
   receiveFromSocket(buffer);
   
   if(!strcmp(buffer,"s")){
-    fsChangingCommands--;
-    pthread_cond_signal(&canPrint);
     return 0;
   }
-  fsChangingCommands--;
-  pthread_cond_signal(&canPrint);
   return -1;
 }
 
 int tfsMove(char *command){
   char buffer[MAX_BUFFER_SIZE];
-  fsChangingCommands++;
 
   sendToSocket(command);
   receiveFromSocket(buffer);
   
   if(!strcmp(buffer,"s")){
-    fsChangingCommands--;
-    pthread_cond_signal(&canPrint);
     return 0;
   }
-  fsChangingCommands--;
-  pthread_cond_signal(&canPrint);
   return -1;
 }
 
@@ -117,19 +97,14 @@ int tfsLookup(char *command) {
 }
 
 int tfsPrint(char *command) {
-  pthread_mutex_lock(&printLock);
-  while (fsChangingCommands != 0)
-    pthread_cond_wait(&canPrint, &printLock);
   char buffer[MAX_BUFFER_SIZE];
 
   sendToSocket(command);
   receiveFromSocket(buffer);
   
   if(!strcmp(buffer,"s")){
-    pthread_mutex_unlock(&printLock);
     return 0;
   }
-  pthread_mutex_unlock(&printLock);
   return -1;
 }
 
@@ -152,5 +127,8 @@ int tfsMount(char * sockPath) {
 }
 
 int tfsUnmount() {
+  
+  if((close(sockfd) && unlink(CLNAME)) ==0)
+    return 0;  
   return -1;
 }
