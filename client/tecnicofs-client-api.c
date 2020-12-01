@@ -46,63 +46,69 @@ void receiveFromSocket(char *buffer){
   }
 }
 
-int tfsCreate(char *command) {
-  char buffer[MAX_BUFFER_SIZE];
+int tfsCreate(char *filename, char nodeType) {
+  char inbuffer[MAX_BUFFER_SIZE];
+  char outbuffer[MAX_BUFFER_SIZE];
+  sprintf(outbuffer,"c %s %c",filename,nodeType);
 
-  sendToSocket(command);
-  receiveFromSocket(buffer);
+  sendToSocket(outbuffer);
+  receiveFromSocket(inbuffer);
   
-  if(!strcmp(buffer,"s")){
-    return 0;
-  }
-  
-  return -1;
-}
-
-int tfsDelete(char *command) {
-  char buffer[MAX_BUFFER_SIZE];
-
-  sendToSocket(command);
-  receiveFromSocket(buffer);
-  
-  if(!strcmp(buffer,"s")){
+  if(!strcmp(inbuffer,"s")){
     return 0;
   }
   return -1;
 }
 
-int tfsMove(char *command){
-  char buffer[MAX_BUFFER_SIZE];
-
-  sendToSocket(command);
-  receiveFromSocket(buffer);
+int tfsDelete(char *path) {
+  char inbuffer[MAX_BUFFER_SIZE];
+  char outbuffer[MAX_BUFFER_SIZE];
+  sprintf(outbuffer,"d %s",path);
   
-  if(!strcmp(buffer,"s")){
+  sendToSocket(outbuffer);
+  receiveFromSocket(inbuffer);
+  
+  if(!strcmp(inbuffer,"s")){
     return 0;
   }
   return -1;
 }
 
+int tfsLookup(char *path){
+  char inbuffer[MAX_BUFFER_SIZE];
+  char outbuffer[MAX_BUFFER_SIZE];
+  sprintf(outbuffer,"l %s",path);
 
-int tfsLookup(char *command) {
-  char buffer[MAX_BUFFER_SIZE];
-
-  sendToSocket(command);
-  receiveFromSocket(buffer);
+  sendToSocket(outbuffer);
+  receiveFromSocket(inbuffer);
   
-  if(!strcmp(buffer,"s")){
+  if(!strcmp(inbuffer,"s")){
+    return 0;
+  }
+  return -1;
+}
+
+int tfsMove(char *from, char *to){
+  char inbuffer[MAX_BUFFER_SIZE];
+  char outbuffer[MAX_BUFFER_SIZE];
+  sprintf(outbuffer,"m %s %s",from,to);
+
+  sendToSocket(outbuffer);
+  receiveFromSocket(inbuffer);
+  
+  if(!strcmp(inbuffer,"s")){
     return 0;
   }
   return -1;
 }
 
 int tfsPrint(char *command) {
-  char buffer[MAX_BUFFER_SIZE];
+  char inbuffer[MAX_BUFFER_SIZE];
 
   sendToSocket(command);
-  receiveFromSocket(buffer);
+  receiveFromSocket(inbuffer);
   
-  if(!strcmp(buffer,"s")){
+  if(!strcmp(inbuffer,"s")){
     return 0;
   }
   return -1;
