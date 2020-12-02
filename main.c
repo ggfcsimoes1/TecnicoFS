@@ -162,19 +162,15 @@ int applyCommands(char * command){
             switch (type) {
                 case 'f': 
                     printf("Create file: %s\n", name);
-                    fsChangingCommands++;
-                    if(create(name, T_FILE,iNumberBuffer,&numLocks) == FAIL)
-                        operationSuccessful = FAIL;
-                    fsChangingCommands--;
-                    pthread_cond_signal(&canPrint);
+                    
+                    if(create(name, T_FILE, iNumberBuffer, &numLocks) == FAIL)
+                        operationSuccessful = FAIL; 
                     break;
                 case 'd':
                     printf("Create directory: %s\n", name);
-                    fsChangingCommands++;
-                    if(create(name, T_DIRECTORY,iNumberBuffer,&numLocks) == FAIL)
+                    
+                    if(create(name, T_DIRECTORY, iNumberBuffer, &numLocks) == FAIL)
                         operationSuccessful = FAIL;
-                    fsChangingCommands--;
-                    pthread_cond_signal(&canPrint);
                     break;
                 default:
                     fprintf(stderr, "Error: invalid node type\n");
@@ -182,7 +178,7 @@ int applyCommands(char * command){
             }
             break;
         case 'l': 
-            searchResult = lookup(name,iNumberBuffer,&numLocks);
+            searchResult = lookup(name, iNumberBuffer, &numLocks);
             if (searchResult >= 0)
                 printf("Search: %s found\n", name);
             else{
@@ -192,29 +188,20 @@ int applyCommands(char * command){
             break;
         case 'd':
             printf("Delete: %s\n", name);
-            fsChangingCommands++;
-            if(delete(name,iNumberBuffer,&numLocks) == FAIL)
-                operationSuccessful = FAIL;
-            fsChangingCommands--;
-            pthread_cond_signal(&canPrint);
+            
+            if(delete(name, iNumberBuffer, &numLocks) == FAIL)
+                operationSuccessful = FAIL;    
             break;
 
         case 'm':
             printf("Move: %s %s\n", name, name2);
-            fsChangingCommands++;
+            
             if(move(name, name2, iNumberBuffer, &numLocks) == FAIL)
-                operationSuccessful = FAIL;
-            fsChangingCommands--;
-            pthread_cond_signal(&canPrint);
+                operationSuccessful = FAIL;    
             break;
 
-        case 'p':
-            pthread_mutex_lock(&printLock);
-            while (fsChangingCommands != 0)
-                pthread_cond_wait(&canPrint, &printLock);
-            
-            print_tecnicofs_tree(openFile(name, "w"));
-            pthread_mutex_unlock(&printLock);
+        case 'p':           
+            print_tecnicofs_tree(openFile(name, "w"), iNumberBuffer, &numLocks);
             break;
             
             printf("Print filesystem to: %s \n", name);
@@ -232,8 +219,9 @@ void *serverApplyCommands(){
     
     while (TRUE) {
         struct sockaddr_un client_addr;
-        char in_buffer[INDIM], out_buffer[OUTDIM];
+        char in_buffer[INDIM];
         int c;
+        int res;
         socklen_t addrlen;
 
         addrlen=sizeof(struct sockaddr_un);
@@ -243,13 +231,9 @@ void *serverApplyCommands(){
         //Preventivo, caso o cliente nao tenha terminado a mensagem em '\0', 
         in_buffer[c]='\0';
         
-        if (applyCommands(in_buffer) == 0){
-            c = sprintf(out_buffer, "s");
-        }
-        else{
-            c = sprintf(out_buffer, "f");
-        }
-        sendto(sockfd, out_buffer, c+1, 0, (struct sockaddr *)&client_addr, addrlen);
+        res = (applyCommands(in_buffer));
+     
+        sendto(sockfd, &res, sizeof(res), 0, (struct sockaddr *)&client_addr, addrlen);
     }
 }
     
@@ -277,7 +261,7 @@ void finishThread(int numberThreads, pthread_t tid[]){
 
 
 int main(int argc, char* argv[]){
-    /*SNAME -> argv[2]*/
+    
    if (serverMount(argv[2]) == 0)
       printf("Mounted! (socket = %s)\n", argv[2]);
     else {

@@ -504,7 +504,9 @@ int lookup_m(char *name, pthread_rwlock_t *iNumberBuffer[], int * numLocks) {
  * Input:
  *  - fp: pointer to output file
  */
-void print_tecnicofs_tree(FILE *fp){
+void print_tecnicofs_tree(FILE *fp, pthread_rwlock_t *iNumberBuffer[], int * numLocks){
+	lock(&inode_table[FS_ROOT].lock,'w');
+	addToBuffer(FS_ROOT, iNumberBuffer, numLocks);
 	inode_print_tree(fp, FS_ROOT, "");
 	fclose(fp);
 }
